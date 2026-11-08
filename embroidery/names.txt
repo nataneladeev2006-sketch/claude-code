@@ -1,0 +1,10 @@
+# FILE (8.3 name for the machine) | text exactly as it should be stitched
+DR_YAEL.JEF  | ד״ר יעל עזרא
+ROFE.JEF     | רופא
+ACHOT.JEF    | אחות
+LIHI_SEV.JEF | ליהי סביליה
+LIOR_LOG.JEF | ליאור לוגסי
+HAREL_CO.JEF | הראל כהן
+YASMIN_K.JEF | יסמין קאקזנוב
+LIOR_ZOH.JEF | ליאור זוהרה לוגסי
+DEKEL_SH.JEF | דקל שרוני
