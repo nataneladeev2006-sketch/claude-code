@@ -91,13 +91,14 @@ letter in one file, those random ids could collide and crash the build. Only ids
 written `נתנאל אדייב @david` in the sheets file). 100.4 × 151 mm for the 20 × 20 hoop, one thread, versions A and B as
 for NAMES9. Frame 5 matches the approved preview `special_preview/SPECIAL_david.JEF` piece for piece.
 
-## Redo: `framed/REDO4A.JEF`
+## Redo: `framed/REDO5A.JEF`
 
-NAMES9A went out of position at stitch 22,271, during frame 6, while the frames were being sewn. All 9 names and frames 1–5
-were already done; frame 6 went wrong and frames 7–9 were never sewn. `REDO4A.JEF` holds those 4 patches: יסמין
-קאקזנוב, ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני. It is 100.4 × 119.6 mm and fits the 14 × 14 or 20 × 20 hoop.
-The file itself was correct: the machine's stitch total matched it, 28,223 stitches. The likely cause is the fabric
-slipping in the hoop, or the hoop being blocked while moving, since the design fills almost the whole 20 × 20 field.
+NAMES9A went out of position partway through: the machine paused at stitch 22,271, in frame 6. Only 4 patches came out
+usable: הראל כהן, ד״ר יעל עזרא, רופא, ליהי סביליה. `REDO5A.JEF` re-makes the other 5: ליאור לוגסי, יסמין קאקזנוב,
+ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני. It is one column of 5 frames, 100.4 × 151 mm, for the 20 × 20 hoop. It
+replaces the earlier REDO4A, which lacked ליאור לוגסי. The file itself was correct: the machine's stitch total matched
+it, 28,223 stitches. The likely cause is the fabric slipping in the hoop, or the hoop being blocked while moving, since
+the 9-frame layout fills almost the whole 20 × 20 field. A single column of 5 leaves much more room.
 
 ## Special patch preview: `special_preview/`
 
