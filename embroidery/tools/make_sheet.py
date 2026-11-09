@@ -48,10 +48,14 @@ def frame_d(cx, cy, w, h, b, ext, d):
     return " ".join([sub(outer), sub(inner)] + [sub(r) for r in rungs])
 
 
-def add_frame(layer, cx, cy, args, ppm, index):
+def add_frame(layer, cx, cy, args, ppm, index, rot=0):
     import inkex
     el = inkex.PathElement()
-    el.set("d", frame_d(cx, cy, args.frame_w * ppm, args.frame_h * ppm, args.border * ppm, 0.5 * ppm, 1.0 * ppm))
+    if rot == 0:
+        el.set("d", frame_d(cx, cy, args.frame_w * ppm, args.frame_h * ppm, args.border * ppm, 0.5 * ppm, 1.0 * ppm))
+    else:
+        el.set("d", frame_d(0, 0, args.frame_w * ppm, args.frame_h * ppm, args.border * ppm, 0.5 * ppm, 1.0 * ppm))
+        el.set("transform", f"translate({cx:.4f},{cy:.4f}) rotate({rot})")
     el.set("style", f"fill:none;stroke:{args.frame_color};stroke-width:1")
     el.set("id", f"frame_{index}")
     el.label = f"frame {index + 1}"
@@ -62,12 +66,46 @@ def add_frame(layer, cx, cy, args, ppm, index):
         "contour_underlay": "True",
         "zigzag_underlay": "True",
         "center_walk_underlay": "False",
-        "trim_after": "True",
+        "trim_after": "False" if args.cut_codes == 0 else "True",
     }
     for k, v in params.items():
         el.set(mn.INKSTITCH_NS + k, v)
     layer.append(el)
     return el
+
+
+def layout_slots(n, args):
+    """Frame centers (mm, page coordinates) and rotation for n frames; returns (slots, page_w, page_h, gap)."""
+    fw, fh = args.frame_w + 0.4, args.frame_h + 0.4          # as stitched (pull compensation)
+    margin = 10.0
+    if args.layout == "column":
+        gap = args.gap
+        if args.max_height and n > 1:
+            gap = min(gap, (args.max_height - n * args.frame_h) / (n - 1))
+        if gap < 3:
+            sys.exit(f"STOP: {n} frames don't fit in {args.max_height} mm")
+        slots = [(margin + args.frame_w / 2, margin + args.frame_h / 2 + i * (args.frame_h + gap), 0) for i in range(n)]
+        return slots, args.frame_w + 2 * margin, n * args.frame_h + (n - 1) * gap + 2 * margin, gap
+    W, H = (float(v) for v in args.hoop.lower().split("x"))
+    gap = args.gap
+    rows = int((H + gap) // (fh + gap))                      # horizontal frames in the left column
+    strip = W - fw - gap                                     # space to the right of that column
+    cols = int((strip + gap) // (fh + gap)) if strip > fh else 0
+    vrows = int((H + gap) // (fw + gap))                     # sideways frames per column
+    if n > rows + cols * vrows:
+        sys.exit(f"STOP: {n} frames don't fit in {args.hoop} mm (max {rows + cols * vrows})")
+    nh = min(n, rows)
+    slots = [(margin + fw / 2, margin + fh / 2 + i * (fh + gap), 0) for i in range(nh)]
+    k = 0
+    for c in range(cols):
+        for r in range(vrows):
+            if nh + k >= n:
+                break
+            slots.append((margin + fw + gap + fh / 2 + c * (fh + gap), margin + fw / 2 + r * (fw + gap), -90))
+            k += 1
+    used_w = fw + (gap + cols * (fh + gap) - gap if k else 0)
+    used_h = max(nh * fh + (nh - 1) * gap, (fw if k else 0))
+    return slots, used_w + 2 * margin, used_h + 2 * margin, gap
 
 
 def glyph_text(lettering_group):
@@ -102,6 +140,13 @@ def main():
     ap.add_argument("--fit", choices=("all", "each"), default="all",
                     help="all: one letter size for every name (fits the widest); each: every name gets the target "
                          "size unless too long, then narrower word gaps, then smaller letters for that name only")
+    ap.add_argument("--layout", choices=("column", "fill"), default="column",
+                    help="column: frames stacked in one column; fill: a column of frames, then frames turned "
+                         "sideways in the space next to it (fits more in a square hoop)")
+    ap.add_argument("--hoop", default="196x196", help="usable sewing area for --layout fill, WxH mm")
+    ap.add_argument("--cut-codes", type=int, default=3,
+                    help="JEF: zero-length jumps per cut (3 = Ink/Stitch default, 1 = like Janome software); "
+                         "0 = no cut codes at all (the machine cuts long jumps by its own setting)")
     ap.add_argument("--min-word-gap", type=float, default=0.35,
                     help="smallest word gap for --fit each, as a fraction of the letter height (kept when letters shrink)")
     args = ap.parse_args()
@@ -166,61 +211,67 @@ def main():
             body_mids[scale] = (refplan.bounding_box[1] + refplan.bounding_box[3]) / 2
         print(f"font: {font.name}")
 
+        trim_mode = "off" if args.cut_codes == 0 else args.trim
         for out, names in sheets:
             n = len(names)
-            gap = args.gap
-            if args.max_height and n > 1:
-                gap = min(gap, (args.max_height - n * args.frame_h) / (n - 1))
-            if gap < 3:
-                sys.exit(f"STOP: {out}: {n} frames don't fit in {args.max_height} mm")
-            total_h = n * args.frame_h + (n - 1) * gap
-            page_w, page_h = args.frame_w + 20, total_h + 20
+            slots, page_w, page_h, gap = layout_slots(n, args)
             svg, layer = mn.new_document(os.path.basename(out) + ".svg", page_w, page_h)
-            cx = page_w / 2 * ppm
-            centers = [(10 + args.frame_h / 2 + i * (args.frame_h + gap)) * ppm for i in range(n)]
+            centers = [(sx * ppm, sy * ppm, rot) for sx, sy, rot in slots]
 
             groups = []
-            for i, (text, cy) in enumerate(zip(names, centers)):
+            for i, (text, (cx, cy, rot)) in enumerate(zip(names, centers)):
                 scale, ws = sizing[text]
                 body_mid = body_mids[scale]                    # baseline-relative middle of the letters
-                g = mn.add_lettering(layer, text, font, scale, args.trim, args.text_color, args.satin_spacing, ws)
+                g = mn.add_lettering(layer, text, font, scale, trim_mode, args.text_color, args.satin_spacing, ws)
                 # at these bigger sizes, trim between the two marks of ״ instead of sewing a joining stitch
                 for node in g.iter():
                     if node.get("data-extra-glyph") == mn.GERSHAYIM:
                         node.set(mn.INKSTITCH_NS + "min_jump_stitch_length_mm", "1")
+                # without cut codes, never bridge a gap with a straight stitch (it would stay on the patch):
+                # every gap over 0.5 mm becomes a jump (the machine cuts long ones, short ones are snipped)
+                if args.cut_codes == 0:
+                    for node in g.iter():
+                        if node.get(mn.INKSTITCH_NS + "min_jump_stitch_length_mm") is not None:
+                            node.set(mn.INKSTITCH_NS + "min_jump_stitch_length_mm", "0.5")
                 placed = glyph_text(g)
                 if placed != text.replace(" ", ""):
                     sys.exit(f"STOP: '{text}' was placed as '{placed}'")
                 plan, _ = mn.plan_from_nodes(svg, root=g)
                 x0, y0, x1, y1 = plan.bounding_box
-                dx, dy = cx - (x0 + x1) / 2, cy - body_mid
-                g.set("transform", f"translate({dx:.4f},{dy:.4f}) {g.get('transform') or ''}".strip())
+                if rot == 0:
+                    dx, dy = cx - (x0 + x1) / 2, cy - body_mid
+                    g.set("transform", f"translate({dx:.4f},{dy:.4f}) {g.get('transform') or ''}".strip())
+                else:
+                    g.set("transform", f"translate({cx:.4f},{cy:.4f}) rotate({rot}) "
+                                       f"translate({-(x0 + x1) / 2:.4f},{-body_mid:.4f}) {g.get('transform') or ''}".strip())
                 groups.append((text, g))
-            for i, cy in enumerate(centers):
-                add_frame(layer, cx, cy, args, ppm, i)
+            for i, (cx, cy, rot) in enumerate(centers):
+                add_frame(layer, cx, cy, args, ppm, i, rot)
 
-            plan, problems = mn.plan_from_nodes(svg, check=True, trim_jumps=True)
+            plan, problems = mn.plan_from_nodes(svg, check=True, trim_jumps=args.cut_codes != 0)
             for p in problems:
                 print(f"   {p[0]}: {p[1]} on {p[2]}")
             if any(p[0] == "ERROR" for p in problems):
                 sys.exit(f"STOP: Ink/Stitch reports errors in {out}")
 
             # every name must sit inside its frame, clear of the satin border
-            for i, ((text, g), cy) in enumerate(zip(groups, centers)):
+            for i, ((text, g), (cx, cy, rot)) in enumerate(zip(groups, centers)):
                 gx0, gy0, gx1, gy1 = mn.plan_from_nodes(svg, root=g)[0].bounding_box
-                ix0 = cx - (args.frame_w / 2 - args.border) * ppm
-                ix1 = cx + (args.frame_w / 2 - args.border) * ppm
-                iy0 = cy - (args.frame_h / 2 - args.border) * ppm
-                iy1 = cy + (args.frame_h / 2 - args.border) * ppm
+                hw, hh = (args.frame_w / 2 - args.border) * ppm, (args.frame_h / 2 - args.border) * ppm
+                if rot:
+                    hw, hh = hh, hw
+                ix0, ix1, iy0, iy1 = cx - hw, cx + hw, cy - hh, cy + hh
                 clear = min(gx0 - ix0, ix1 - gx1, gy0 - iy0, iy1 - gy1) / ppm
                 if clear < 1.0:
                     sys.exit(f"STOP: '{text}' is only {clear:.2f} mm from its frame")
                 print(f"   frame {i+1}: '{text}' {(gx1-gx0)/ppm:.1f} x {(gy1-gy0)/ppm:.1f} mm, "
                       f"clearance to frame {clear:.1f} mm")
 
-            write_embroidery_file(os.path.abspath(out), plan, svg)
+            write_embroidery_file(os.path.abspath(out), plan, svg,
+                                  {"trim_at": args.cut_codes} if args.cut_codes else {})
             w, h = mn.plan_size_mm(plan)
-            print(f"wrote {out}: {n} names, gap {gap:.1f} mm, size {w:.1f} x {h:.1f} mm, "
+            print(f"wrote {out}: {n} names ({sum(1 for c in centers if c[2])} turned sideways), gap {gap:.1f} mm, "
+                  f"size {w:.1f} x {h:.1f} mm, cut codes {args.cut_codes}, "
                   f"~{sum(len(b) for b in plan)} stitches, colors={len(plan)}")
     finally:
         shutil.rmtree(tmpdir, ignore_errors=True)

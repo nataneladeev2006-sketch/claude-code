@@ -267,9 +267,23 @@ def new_document(docname, width_mm=200, height_mm=100):
     return svg, svg.getElementById("layer1")
 
 
+def unique_lettering_ids():
+    """Ink/Stitch renames lettering elements to '<id>_<randint(0, 9999)>'. With many copies of
+    the same letter in one document two copies can draw the same number and inkex raises
+    'ID ... already exists'. Use a counter instead: always unique, and the same on every run.
+    Only element ids change; stitches are not affected."""
+    import itertools
+    import lib.lettering.font as lettering_font
+    if not getattr(lettering_font, "_unique_ids", False):
+        counter = itertools.count(10000)
+        lettering_font.randint = lambda a, b: next(counter)
+        lettering_font._unique_ids = True
+
+
 def add_lettering(layer, text, font, scale, trim, color, satin_spacing=None, word_spacing=0):
     """Place `text` (Ink/Stitch Lettering) into `layer`; returns the lettering group."""
     from inkex import Group
+    unique_lettering_ids()
     from lib.svg import get_correction_transform
     settings = {
         "text": text, "text_align": 0, "back_and_forth": True,

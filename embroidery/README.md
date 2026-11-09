@@ -64,6 +64,32 @@ Notes:
   2. Every frame's letters compared with a standalone build of the same name: same shapes, within 0.1 mm.
   3. Rendered and read.
 
+## 9 names in one 20 × 20 hoop: `framed/NAMES9A.JEF` / `NAMES9B.JEF`
+
+Names: ד״ר יעל עזרא, רופא, ליהי סביליה, ליאור לוגסי, הראל כהן, יסמין קאקזנוב (stacked), and ליאור זוהרה לוגסי,
+דקל שרוני, הילה חמאני (turned sideways). The design is 194.6 × 182.4 mm. A 200 × 200 hoop holds at most 9 frames of
+100 × 25 mm (`make_sheet.py --layout fill --hoop 196x196 --gap 6`). Names and frames use one thread (Black 002), so the
+machine has no color-change stop.
+
+The machine (Elna eXpressive 830, the same machine as the Janome MC500E) stopped after every letter, even with
+*Thread Cutting: Advanced* and *Cutting Command: ON*. Every Ink/Stitch JEF writes a cut as 3 zero-length jumps;
+Janome's own software writes 1 (pyembroidery issue #54). So there are two versions:
+
+- **A** (`--cut-codes 1`): each cut is 1 code, like Janome's software. Try this first. The machine should cut by
+  itself without stopping.
+- **B** (`--cut-codes 0`): no cut codes. The machine cuts jumps of 3 mm or more by its own setting, and the shorter
+  ones are left to snip. Gaps over 0.5 mm are jumps, never straight stitches across the fabric.
+
+`trim_test/TEST_A.JEF` and `TEST_B.JEF` test the same two choices on one word.
+
+`tools/make_name.py` uses a counter instead of Ink/Stitch's random 0–9999 element ids. With many copies of the same
+letter in one file, those random ids could collide and crash the build. Only ids change, never stitches.
+
+## Special patch preview: `special_preview/`
+
+Three designs for נתנאל אדייב (`tools/special.py`), all 100 × 25 mm in one thread: stars with a double frame, Magen
+David with a double frame, and the חוכמה calligraphy font with stars. They wait for a choice before being added to a sheet.
+
 The old `2_rasap_mifkada.jef` (from an earlier session) stitches upside down with its letters reversed. Don't use it.
 
 ## Making more names

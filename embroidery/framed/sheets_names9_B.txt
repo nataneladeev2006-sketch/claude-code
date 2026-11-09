@@ -1,0 +1,2 @@
+# version B: no cut codes (the machine cuts jumps of 3 mm or more by itself). Hoop 20x20.
+NAMES9B.JEF | ד״ר יעל עזרא | רופא | ליהי סביליה | ליאור לוגסי | הראל כהן | יסמין קאקזנוב | ליאור זוהרה לוגסי | דקל שרוני | הילה חמאני
