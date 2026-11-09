@@ -91,6 +91,14 @@ letter in one file, those random ids could collide and crash the build. Only ids
 written `נתנאל אדייב @david` in the sheets file). 100.4 × 151 mm for the 20 × 20 hoop, one thread, versions A and B as
 for NAMES9. Frame 5 matches the approved preview `special_preview/SPECIAL_david.JEF` piece for piece.
 
+## Redo: `framed/REDO4A.JEF`
+
+NAMES9A went out of position at stitch 22,271, during frame 6, while the frames were being sewn. All 9 names and frames 1–5
+were already done; frame 6 went wrong and frames 7–9 were never sewn. `REDO4A.JEF` holds those 4 patches: יסמין
+קאקזנוב, ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני. It is 100.4 × 119.6 mm and fits the 14 × 14 or 20 × 20 hoop.
+The file itself was correct: the machine's stitch total matched it, 28,223 stitches. The likely cause is the fabric
+slipping in the hoop, or the hoop being blocked while moving, since the design fills almost the whole 20 × 20 field.
+
 ## Special patch preview: `special_preview/`
 
 Three designs for נתנאל אדייב (`tools/special.py`), all 100 × 25 mm in one thread: stars with a double frame, Magen
