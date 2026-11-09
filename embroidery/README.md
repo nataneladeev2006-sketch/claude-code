@@ -7,7 +7,6 @@ Copy the `.JEF` files to the USB stick (nothing else is needed).
 | File | Stitches | Size (mm) |
 |---|---|---|
 | `DR_YAEL.JEF` | ד״ר יעל עזרא | 55.4 × 7.8 |
-| `ROFE.JEF` | רופא | 19.6 × 6.2 |
 | `ACHOT.JEF` | אחות | 21.8 × 6.0 |
 | `LIHI_SEV.JEF` | ליהי סביליה | 48.6 × 7.4 |
 | `LIOR_LOG.JEF` | ליאור לוגסי | 45.6 × 7.4 |
