@@ -157,11 +157,23 @@ def main():
     from lib.svg import PIXELS_PER_MM as ppm
 
     sheets = []
+    special_styles = {}                       # name -> special.py style ("stars", "david", "calligraphy")
     with open(args.sheets, encoding="utf-8") as f:
         for line in f:
             if line.strip() and not line.lstrip().startswith("#"):
                 parts = [p.strip() for p in line.split("|")]
-                sheets.append((os.path.join(args.outdir, parts[0]), [mn.normalize_text(p) for p in parts[1:] if p]))
+                names = []
+                for p in parts[1:]:
+                    if not p:
+                        continue
+                    style = None
+                    if "@" in p:
+                        p, style = p.split("@", 1)
+                        style = style.strip()
+                    names.append(mn.normalize_text(p))
+                    if style:
+                        special_styles[mn.normalize_text(p)] = style
+                sheets.append((os.path.join(args.outdir, parts[0]), names))
     os.makedirs(args.outdir, exist_ok=True)
 
     tmpdir = tempfile.mkdtemp(prefix="make_sheet_")
@@ -173,7 +185,7 @@ def main():
         ref_h = mn.plan_size_mm(ref)[1]                       # ש height at 100 %, mm
         target = args.letter_height / ref_h
         room = args.frame_w - 2 * args.border - 2 * args.side_margin
-        all_names = sorted({n for _, names in sheets for n in names})
+        all_names = sorted({n for _, names in sheets for n in names if n not in special_styles})
         width = lambda n, sc, ws=0: mn.plan_size_mm(mn.build(n, font, sc, "off", None, "w.svg", word_spacing=ws)[1])[0]
         widths = {n: width(n, target) for n in all_names}
         sizing = {}
@@ -220,6 +232,19 @@ def main():
 
             groups = []
             for i, (text, (cx, cy, rot)) in enumerate(zip(names, centers)):
+                if text in special_styles:
+                    import special
+                    if rot:
+                        sys.exit(f"STOP: special patch '{text}' must be in a horizontal slot")
+                    args.color = args.text_color
+                    info = special.build_special(layer, svg, text, special_styles[text], cx, cy, args, ppm, tmpdir,
+                                                 idx=i, trims=args.cut_codes != 0)
+                    placed = glyph_text(info["group"])
+                    if placed != text.replace(" ", ""):
+                        sys.exit(f"STOP: '{text}' was placed as '{placed}'")
+                    print(f"   special: '{text}' style {special_styles[text]}, letters {info['letters']:.2f} mm")
+                    groups.append((text, info["group"]))
+                    continue
                 scale, ws = sizing[text]
                 body_mid = body_mids[scale]                    # baseline-relative middle of the letters
                 g = mn.add_lettering(layer, text, font, scale, trim_mode, args.text_color, args.satin_spacing, ws)

@@ -57,6 +57,7 @@ def build_special(layer, svg, text, style, cx, cy, args, ppm, tmpdir, idx=0, tri
     """Adds one special patch centered at (cx, cy) [px]; returns a short description."""
     color = args.color
     cut = "True" if trims else "False"
+    nojump = {} if trims else {"min_jump_stitch_length_mm": "0.5"}
     line_inset = args.border + 1.0                      # inner line: 1 mm inside the satin
     if style == "calligraphy":
         fontname, orn, orn_w, gap = "חוכמה Medium ", "star", 3.6, 2.2
@@ -94,19 +95,19 @@ def build_special(layer, svg, text, style, cx, cy, args, ppm, tmpdir, idx=0, tri
             R = orn_w / 2 * ppm
             path(layer, star_d(ox, cy, R, R * 0.42), f"fill:{color};stroke:none",
                  {"fill_underlay": "False", "row_spacing_mm": "0.3", "angle": "90", "max_stitch_length_mm": "3",
-                  "running_stitch_length_mm": "1", "trim_after": "False"}, f"orn_{idx}_{side}")
+                  "running_stitch_length_mm": "1", "trim_after": "False", **nojump}, f"orn_{idx}_{side}")
             # thin outline around the small fill: crisp star points
             path(layer, star_d(ox, cy, R, R * 0.42), f"fill:none;stroke:{color};stroke-width:0.5",
-                 {"running_stitch_length_mm": "0.8", "trim_after": cut}, f"orn_{idx}_{side}_outline")
+                 {"running_stitch_length_mm": "0.8", "trim_after": cut, **nojump}, f"orn_{idx}_{side}_outline")
         else:
             R = orn_w / 2 / math.cos(math.radians(30)) * ppm      # hexagram width = 2 R cos30
             path(layer, david_d(ox, cy, R), f"fill:none;stroke:{color};stroke-width:0.5",
-                 {"running_stitch_length_mm": "1.2", "bean_stitch_repeats": "1", "trim_after": cut}, f"orn_{idx}_{side}")
+                 {"running_stitch_length_mm": "1.2", "bean_stitch_repeats": "1", "trim_after": cut, **nojump}, f"orn_{idx}_{side}")
     if inner_line:
         lw, lh = (args.frame_w - 2 * line_inset) * ppm, (args.frame_h - 2 * line_inset) * ppm
         path(layer, rect_d(cx, cy, lw, lh), f"fill:none;stroke:{color};stroke-width:0.5",
-             {"running_stitch_length_mm": "2", "bean_stitch_repeats": "1", "trim_after": cut}, f"line_{idx}")
-    return dict(font=font.name.strip(), letters=mn.plan_size_mm(ref)[1] * scale, name_w=name_w)
+             {"running_stitch_length_mm": "2", "bean_stitch_repeats": "1", "trim_after": cut, **nojump}, f"line_{idx}")
+    return dict(font=font.name.strip(), letters=mn.plan_size_mm(ref)[1] * scale, name_w=name_w, group=g)
 
 
 def main():

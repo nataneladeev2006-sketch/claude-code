@@ -85,6 +85,12 @@ Janome's own software writes 1 (pyembroidery issue #54). So there are two versio
 `tools/make_name.py` uses a counter instead of Ink/Stitch's random 0–9999 element ids. With many copies of the same
 letter in one file, those random ids could collide and crash the build. Only ids change, never stitches.
 
+## 5 names incl. the special patch: `framed/NAMES5A.JEF` / `NAMES5B.JEF`
+
+אביטל ברדה, דוד יצקסון, נווה לזניק, שלו מימון, and **נתנאל אדייב** in the chosen design (Magen David + double frame,
+written `נתנאל אדייב @david` in the sheets file). 100.4 × 151 mm for the 20 × 20 hoop, one thread, versions A and B as
+for NAMES9. Frame 5 matches the approved preview `special_preview/SPECIAL_david.JEF` piece for piece.
+
 ## Special patch preview: `special_preview/`
 
 Three designs for נתנאל אדייב (`tools/special.py`), all 100 × 25 mm in one thread: stars with a double frame, Magen

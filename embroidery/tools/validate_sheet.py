@@ -83,8 +83,9 @@ def frame_kind(bb):
     return None
 
 
-def check(path, names, max_w, max_h, cut_codes, ncolors):
+def check(path, names, max_w, max_h, cut_codes, ncolors, specials=()):
     P = []
+    special_report = []
     r = parse(path, cut_codes)
     if r["off"] != 0x74 + 8 * r["ncol"]: P.append("bad header offset")
     if r["ncol"] != ncolors: P.append(f"{r['ncol']} colors (expected {ncolors})")
@@ -129,6 +130,22 @@ def check(path, names, max_w, max_h, cut_codes, ncolors):
     if seen != list(range(len(frames)))[:len(seen)]: P.append("names not sewn in the same order as their frames")
     for f, pcs in enumerate(per):
         name = names[seen.index(f)] if f in seen else "?"
+        if name in specials and pcs:
+            # special patch: inner frame line (long), two ornaments (outside the name), then the letters
+            fb = frames[f][0]; fcx = (fb[0] + fb[2]) / 2; fcy = (fb[1] + fb[3]) / 2
+            line = [q for q in pcs if q[2] - q[0] > 80]
+            orn = [q for q in pcs if q not in line and abs((q[0] + q[2]) / 2 - fcx) > 37.5]
+            pcs = [q for q in pcs if q not in line and q not in orn]
+            if len(line) != 1 or abs((line[0][0] + line[0][2]) / 2 - fcx) > 0.3 or abs((line[0][1] + line[0][3]) / 2 - fcy) > 0.3:
+                P.append(f"frame {f+1} '{name}': inner frame line missing or off-center")
+            right = [q for q in orn if (q[0] + q[2]) / 2 > fcx]; left = [q for q in orn if (q[0] + q[2]) / 2 < fcx]
+            if not right or not left:
+                P.append(f"frame {f+1} '{name}': ornament missing on one side")
+            else:
+                rx = (min(q[0] for q in right) + max(q[2] for q in right)) / 2
+                lx = (min(q[0] for q in left) + max(q[2] for q in left)) / 2
+                if abs((rx - fcx) - (fcx - lx)) > 0.6: P.append(f"frame {f+1} '{name}': ornaments not symmetric")
+            special_report.append(f"frame {f+1}: line ok, ornaments {len(left)}+{len(right)} pieces, letters {len(pcs)} pieces")
         letters = len(name.replace(" ", ""))
         if len(pcs) < letters: P.append(f"frame {f+1} '{name}': {len(pcs)} pieces < {letters} letters")
         if not pcs: continue
@@ -147,7 +164,8 @@ def check(path, names, max_w, max_h, cut_codes, ncolors):
     w, h = (x1 - x0) / 10, (y1 - y0) / 10
     if w > max_w or h > max_h: P.append(f"size {w:.1f} x {h:.1f} exceeds {max_w} x {max_h}")
     if abs(x0 + x1) > 4 or abs(y0 + y1) > 4: P.append("not centered")
-    r.update(size=(w, h), per=[len(x) for x in per], sideways=sum(1 for _, kd in frames if kd == "v"))
+    r.update(size=(w, h), per=[len(x) for x in per], sideways=sum(1 for _, kd in frames if kd == "v"),
+             special_report=special_report)
     return P, r
 
 
@@ -164,11 +182,19 @@ def main():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         parts = [x.strip() for x in line.split("|")]
-        f, names = parts[0], [" ".join(x.split()) for x in parts[1:] if x]
-        P, r = check(os.path.join(folder, f), names, max_w, max_h, cut_codes, ncolors)
+        f = parts[0]
+        names, specials = [], set()
+        for x in parts[1:]:
+            if not x: continue
+            nm = " ".join(x.split("@")[0].split())
+            names.append(nm)
+            if "@" in x: specials.add(nm)
+        P, r = check(os.path.join(folder, f), names, max_w, max_h, cut_codes, ncolors, specials)
         size = r.get("size", (0, 0))
         print(f"{'PASS' if not P else 'FAIL'} {f:12s} {size[0]:5.1f} x {size[1]:5.1f} mm  frames {len(r.get('per', []))} "
               f"({r.get('sideways', 0)} sideways)  text pieces per frame {r.get('per')}  {'; '.join(P)}")
+        for line_ in r.get("special_report", []):
+            print(f"     special {line_}")
         bad += bool(P)
     print("ALL PASS" if not bad else f"{bad} FILE(S) FAILED")
     sys.exit(1 if bad else 0)
