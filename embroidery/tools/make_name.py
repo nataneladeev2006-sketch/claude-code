@@ -7,8 +7,8 @@ It does what Inkscape > Extensions > Ink/Stitch > Lettering does: places the
 pre-digitized font glyphs, then runs Ink/Stitch's stitch planner and file writer.
 
 Extras over the plain Lettering tool:
-  * adds a ״ (gershayim) glyph to fonts that lack it ("פשוט מעוגל" / "Small"),
-    built from Varela Round's own ״ outline as two satin columns, so ד״ר works;
+  * adds ״ (gershayim) and "." to fonts that lack them ("פשוט מעוגל" / "Small"),
+    built from Varela Round's own outlines as satin columns, so ד״ר and ע.טכנר work;
   * refuses to run if a letter is missing from the font (Ink/Stitch would
     silently turn it into a space);
   * runs Ink/Stitch's element validation (Troubleshoot) and fails on errors;
@@ -88,109 +88,127 @@ def install_wx_placeholder():
 
 
 # ----------------------------------------------------------------------------
-# ״ (gershayim) for the "פשוט מעוגל" fonts.
-# Those fonts are digitized from Varela Round Hebrew (1000 units/em) with
+# Extra glyphs for the "פשוט מעוגל" fonts (they only have the 27 letters).
+# Those fonts are digitized from Varela Round (1000 units/em) with
 # svg_x = 0.2 * x and svg_y = 200 - 0.2 * y (checked on all 27 letters).
-# Outline + advance below are Varela Round's U+05F4 (SIL OFL 1.1).
+# Outlines + advances below are Varela Round's own (SIL OFL 1.1).
+# Each stroke becomes one satin column: rails follow the stroke's sides
+# (bottom/first point -> top/last point), ending part-way into the round
+# caps like the font's own ו and י.
 # ----------------------------------------------------------------------------
-GERSHAYIM = "״"
-GERSHAYIM_OUTLINE_TTF = (
-    "M190 437Q180 441 174.5 453Q169 465 173 480L206 612Q211 632 226.5 641Q242 650 262 645"
-    "Q280 638 286.5 622Q293 606 286 588L231 456Q218 429 190 437Z"
-    "M59 437Q48 441 43 453Q38 465 42 480L74 612Q79 632 94.5 640.5Q110 649 130 644"
-    "Q148 638 154.5 622.5Q161 607 153 588L99 456Q94 443 83 438Q72 433 59 437Z")
-GERSHAYIM_ADVANCE_TTF = 311
-# Satin rails (bottom -> top) following each stroke's sides, ending part-way
-# into the round caps like the font's own ו and י.
-GERSHAYIM_STROKES_TTF = [
-    # right stroke (sewn first, bottom -> top)
-    {"left": [(174.5, 453), (173, 480), (206, 612), (226.5, 641)],
-     "right": [(214.25, 437.75), (231, 456), (286, 588), (286.5, 622)], "reverse": False},
-    # left stroke (sewn second, top -> bottom): the strokes connect at the top,
-    # where the gap between them is narrowest (~0.45 mm at 6 mm letters)
-    {"left": [(43, 453), (42, 480), (74, 612), (94.5, 640.5)],
-     "right": [(83, 438), (99, 456), (153, 588), (154.5, 622.5)], "reverse": True},
-]
+GERSHAYIM = "\u05F4"
+EXTRA_GLYPHS = {
+    GERSHAYIM: {  # U+05F4 from Varela Round Hebrew
+        "outline": ("M190 437Q180 441 174.5 453Q169 465 173 480L206 612Q211 632 226.5 641Q242 650 262 645"
+                    "Q280 638 286.5 622Q293 606 286 588L231 456Q218 429 190 437Z"
+                    "M59 437Q48 441 43 453Q38 465 42 480L74 612Q79 632 94.5 640.5Q110 649 130 644"
+                    "Q148 638 154.5 622.5Q161 607 153 588L99 456Q94 443 83 438Q72 433 59 437Z"),
+        "advance": 311,
+        # the ~1.3 mm hop between the two marks is sewn, not jumped (no loose thread)
+        "min_jump_mm": "2",
+        "strokes": [
+            # right mark (sewn first, bottom -> top)
+            {"left": [(174.5, 453), (173, 480), (206, 612), (226.5, 641)],
+             "right": [(214.25, 437.75), (231, 456), (286, 588), (286.5, 622)], "reverse": False},
+            # left mark (sewn second, top -> bottom): the marks connect at the top,
+            # where the gap between them is narrowest
+            {"left": [(43, 453), (42, 480), (74, 612), (94.5, 640.5)],
+             "right": [(83, 438), (99, 456), (153, 588), (154.5, 622.5)], "reverse": True},
+        ],
+    },
+    ".": {  # U+002E from Varela Round Latin: a round dot on the baseline, sewn as one satin "dot"
+        "outline": ("M125 -3Q102 -3 85.5 13.5Q69 30 69 53V59Q69 82 85.5 98.5Q102 115 125 115H135"
+                    "Q158 115 174.5 98.5Q191 82 191 59V53Q191 30 174.5 13.5Q158 -3 135 -3Z"),
+        "advance": 260,
+        "min_jump_mm": None,
+        "strokes": [
+            {"left": [(100, 113), (78, 96), (69, 75), (69, 37), (78, 16), (100, -1)],
+             "right": [(160, 113), (182, 96), (191, 75), (191, 37), (182, 16), (160, -1)], "reverse": False},
+        ],
+    },
+}
 
 
 def _ttf_to_svg(pt):
     return (0.2 * pt[0], 200.0 - 0.2 * pt[1])
 
 
-def _gershayim_satin_d(stroke):
+def _satin_d(stroke):
     """Satin column path data: two rails + three rungs perpendicular to the stroke."""
-    from shapely.geometry import LineString
+    from shapely.geometry import LineString, Point
     left = [_ttf_to_svg(p) for p in stroke["left"]]
     right = [_ttf_to_svg(p) for p in stroke["right"]]
-    bottom = ((left[0][0] + right[0][0]) / 2, (left[0][1] + right[0][1]) / 2)
-    top = ((left[-1][0] + right[-1][0]) / 2, (left[-1][1] + right[-1][1]) / 2)
-    ax, ay = top[0] - bottom[0], top[1] - bottom[1]
+    start = ((left[0][0] + right[0][0]) / 2, (left[0][1] + right[0][1]) / 2)
+    end = ((left[-1][0] + right[-1][0]) / 2, (left[-1][1] + right[-1][1]) / 2)
+    ax, ay = end[0] - start[0], end[1] - start[1]
     length = (ax ** 2 + ay ** 2) ** 0.5
-    ux, uy = ax / length, ay / length          # along the stroke
-    px, py = -uy, ux                            # across the stroke
+    px, py = -ay / length, ax / length          # across the stroke
+    axis = LineString([start, end])
+    half = max(axis.distance(Point(p)) for p in left + right) + 4.0
     rungs = []
     for t in (0.15, 0.5, 0.85):
-        cx, cy = bottom[0] + ax * t, bottom[1] + ay * t
-        half = 14.0                             # rails are <= ~9 units from the axis
+        cx, cy = start[0] + ax * t, start[1] + ay * t
         rungs.append([(cx - px * half, cy - py * half), (cx + px * half, cy + py * half)])
     for rung in rungs:                          # each rung must cross each rail exactly once
         for rail in (left, right):
             hit = LineString(rung).intersection(LineString(rail))
             if hit.geom_type != "Point":
-                raise RuntimeError("gershayim rung does not cross rail once")
+                raise RuntimeError("extra glyph: rung does not cross a rail exactly once")
     if stroke["reverse"]:
         left, right = left[::-1], right[::-1]
     sub = lambda pts: "M " + " L ".join(f"{x:.3f},{y:.3f}" for x, y in pts)
     return " ".join([sub(left), sub(right)] + [sub(r) for r in rungs])
 
 
-def add_gershayim(font_dir, out_dir):
-    """Copy an Ink/Stitch font and add a ״ glyph to its variant SVGs and font.json."""
+def add_extra_glyphs(font_dir, out_dir, chars):
+    """Copy an Ink/Stitch font and add the requested EXTRA_GLYPHS to its variant SVGs and font.json."""
     import inkex
     from lxml import etree
     shutil.copytree(font_dir, out_dir)
     with open(os.path.join(out_dir, "font.json"), encoding="utf-8") as f:
         meta = json.load(f)
     if meta.get("units_per_em") != 200.0 or "Varela" not in meta.get("original_font", ""):
-        raise RuntimeError("gershayim geometry is only calibrated for the Varela Round based fonts")
-    outline = inkex.Path(GERSHAYIM_OUTLINE_TTF).transform(
-        inkex.Transform(matrix=((0.2, 0, 0), (0, -0.2, 200)))).to_absolute()
+        raise RuntimeError("extra glyph geometry is only calibrated for the Varela Round based fonts")
+    to_svg = inkex.Transform(matrix=((0.2, 0, 0), (0, -0.2, 200)))
     for variant in ("rtl", "ltr"):
         path = os.path.join(out_dir, f"{variant}.svg")
         if not os.path.exists(path):
             continue
         svg = inkex.load_svg(path).getroot()
         template = next(e for e in svg.iter() if e.get("{http://inkstitch.org/namespace}satin_column") == "True")
-        layer = inkex.Layer()
-        layer.label = f"GlyphLayer-{GERSHAYIM}"
-        layer.set("style", "display:none")
-        layer.set("id", f"glyph_gershayim_{variant}")
-        hidden = inkex.PathElement()
-        hidden.set("d", str(outline))
-        hidden.set("style", "display:none;fill:none;stroke:#000000")
-        hidden.set("id", f"gershayim_outline_{variant}")
-        layer.append(hidden)
-        strokes = GERSHAYIM_STROKES_TTF if variant == "rtl" else GERSHAYIM_STROKES_TTF[::-1]
-        for i, stroke in enumerate(strokes):
-            satin = inkex.PathElement()
-            for k, v in template.attrib.items():
-                if k.startswith("{http://inkstitch.org/namespace}"):
-                    satin.set(k, v)
-            # the ~1.3 mm hop between the two strokes is sewn, not jumped (no loose thread)
-            satin.set("{http://inkstitch.org/namespace}min_jump_stitch_length_mm", "2")
-            satin.set("style", template.get("style"))
-            satin.set("inkscape:label", f"Colonne satin {i}")
-            satin.set("id", f"gershayim_satin_{variant}_{i}")
-            satin.set("d", _gershayim_satin_d(stroke))
-            layer.append(satin)
-        svg.append(layer)
+        for n, ch in enumerate(chars):
+            spec = EXTRA_GLYPHS[ch]
+            layer = inkex.Layer()
+            layer.label = f"GlyphLayer-{ch}"
+            layer.set("style", "display:none")
+            layer.set("id", f"glyph_extra_{variant}_{n}")
+            hidden = inkex.PathElement()
+            hidden.set("d", str(inkex.Path(spec["outline"]).transform(to_svg).to_absolute()))
+            hidden.set("style", "display:none;fill:none;stroke:#000000")
+            hidden.set("id", f"extra_outline_{variant}_{n}")
+            layer.append(hidden)
+            strokes = spec["strokes"] if variant == "rtl" else spec["strokes"][::-1]
+            for i, stroke in enumerate(strokes):
+                satin = inkex.PathElement()
+                for k, v in template.attrib.items():
+                    if k.startswith("{http://inkstitch.org/namespace}"):
+                        satin.set(k, v)
+                if spec["min_jump_mm"]:
+                    satin.set("{http://inkstitch.org/namespace}min_jump_stitch_length_mm", spec["min_jump_mm"])
+                satin.set("style", template.get("style"))
+                satin.set("inkscape:label", f"Colonne satin {i}")
+                satin.set("id", f"extra_satin_{variant}_{n}_{i}")
+                satin.set("d", _satin_d(stroke))
+                layer.append(satin)
+            svg.append(layer)
         with open(path, "wb") as f:
             f.write(etree.tostring(svg.getroottree(), xml_declaration=True, encoding="UTF-8"))
     meta.setdefault("glyphs", [])
-    if GERSHAYIM not in meta["glyphs"]:
-        meta["glyphs"].append(GERSHAYIM)
-    meta["horiz_adv_x"][GERSHAYIM] = round(GERSHAYIM_ADVANCE_TTF * 0.2)
-    meta["name"] = meta["name"].strip() + " + ״"
+    for ch in chars:
+        if ch not in meta["glyphs"]:
+            meta["glyphs"].append(ch)
+        meta["horiz_adv_x"][ch] = round(EXTRA_GLYPHS[ch]["advance"] * 0.2)
+    meta["name"] = meta["name"].strip() + " + " + " ".join(chars)
     with open(os.path.join(out_dir, "font.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
@@ -238,21 +256,20 @@ def add_trims_before_jumps(stitch_plan):
     return added
 
 
-def build(text, font, scale, trim, color, docname, satin_spacing=None, check=False, trim_jumps=False,
-          word_spacing=0):
-    """Render `text` with `font` at `scale` into a fresh SVG.
-    Returns (svg_root, stitch_plan, lettering_group, problems)."""
+def new_document(docname, width_mm=200, height_mm=100):
     import inkex
-    from inkex import Group
-    from lib.elements import iterate_nodes, nodes_to_elements
-    from lib.metadata import InkStitchMetadata
-    from lib.stitch_plan import stitch_groups_to_stitch_plan
-    from lib.svg import get_correction_transform
-    from lib.threads import ThreadCatalog
-
+    from lib.svg import PIXELS_PER_MM
     svg = inkex.load_svg(io.BytesIO(BLANK_SVG.format(docname=docname).encode("utf-8"))).getroot()
-    layer = svg.getElementById("layer1")
+    svg.set("width", f"{width_mm}mm")
+    svg.set("height", f"{height_mm}mm")
+    svg.set("viewBox", f"0 0 {width_mm * PIXELS_PER_MM:.5f} {height_mm * PIXELS_PER_MM:.5f}")
+    return svg, svg.getElementById("layer1")
 
+
+def add_lettering(layer, text, font, scale, trim, color, satin_spacing=None, word_spacing=0):
+    """Place `text` (Ink/Stitch Lettering) into `layer`; returns the lettering group."""
+    from inkex import Group
+    from lib.svg import get_correction_transform
     settings = {
         "text": text, "text_align": 0, "back_and_forth": True,
         "font": font.marked_custom_font_id, "scale": int(round(scale * 100)),
@@ -288,9 +305,18 @@ def build(text, font, scale, trim, color, docname, satin_spacing=None, check=Fal
                 if st.get("fill") not in (None, "none"):
                     st["fill"] = color
                 node.style = st
+    return lettering_group
 
+
+def plan_from_nodes(svg, root=None, check=False, trim_jumps=False):
+    """Ink/Stitch stitch plan for everything under `root` (default: whole document).
+    Returns (stitch_plan, problems)."""
+    from lib.elements import iterate_nodes, nodes_to_elements
+    from lib.metadata import InkStitchMetadata
+    from lib.stitch_plan import stitch_groups_to_stitch_plan
+    from lib.threads import ThreadCatalog
     metadata = InkStitchMetadata(svg)
-    elements = nodes_to_elements(iterate_nodes(svg))
+    elements = nodes_to_elements(iterate_nodes(root if root is not None else svg))
     problems = []
     if check:
         for element in elements:
@@ -309,6 +335,16 @@ def build(text, font, scale, trim, color, docname, satin_spacing=None, check=Fal
     ThreadCatalog().match_and_apply_palette(stitch_plan, metadata["thread-palette"])
     if trim_jumps:
         add_trims_before_jumps(stitch_plan)
+    return stitch_plan, problems
+
+
+def build(text, font, scale, trim, color, docname, satin_spacing=None, check=False, trim_jumps=False,
+          word_spacing=0):
+    """Render `text` with `font` at `scale` into a fresh SVG.
+    Returns (svg_root, stitch_plan, lettering_group, problems)."""
+    svg, layer = new_document(docname)
+    lettering_group = add_lettering(layer, text, font, scale, trim, color, satin_spacing, word_spacing)
+    stitch_plan, problems = plan_from_nodes(svg, check=check, trim_jumps=trim_jumps)
     return svg, stitch_plan, lettering_group, problems
 
 
@@ -346,9 +382,10 @@ def load_font(args, needed_chars, tmpdir):
         if font is None:
             sys.exit(f"Font not found: {args.font}")
     have = glyph_names(font)
-    if GERSHAYIM in needed_chars and GERSHAYIM not in have:
-        patched = os.path.join(tmpdir, "font_with_gershayim")
-        add_gershayim(font.path, patched)
+    extra = sorted(c for c in set(needed_chars) if c in EXTRA_GLYPHS and c not in have)
+    if extra:
+        patched = os.path.join(tmpdir, "font_with_extra_glyphs")
+        add_extra_glyphs(font.path, patched, extra)
         font = Font(patched)
         have = glyph_names(font)
     missing = sorted(set(needed_chars) - have - {" "})

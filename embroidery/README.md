@@ -32,6 +32,28 @@ Special cases:
   letter size. Do **not** shrink this font below about 18.5 %: the gap inside ה then gets sewn over and it reads as ח.
   `validate_jef.py` catches this.
 
+## Framed patches: `framed/`
+
+These are several names in one file, each inside a green satin frame. The layout is copied from the design on the
+machine (100 × 25 mm frames, about 9 mm letters). The machine sews all the names in **Black 002** first, stops for the
+thread change, then sews the frames in **Yellow Green 218**.
+
+| File | Frames (top to bottom) | Size (mm) | Hoop |
+|---|---|---|---|
+| `SHEET1.JEF` | עמית ממן / עידן רוזנבלום / רועי בלאו | 100.4 × 115.4 | 140 × 140 (SQ14b) |
+| `SHEET2.JEF` | ע.טכנר / טכנר | 100.4 × 70.4 | 140 × 140 (SQ14b) |
+| `ALL5_BIG.JEF` | all five | 100.4 × 190.4 | 140 × 200 (RE20b) or bigger |
+
+Notes:
+- One letter size (9.00 mm, scale 28 %) for every name; the widest, עידן רוזנבלום, fits with 1.4 mm to spare.
+- Each frame is one satin column (4 mm, contour + zigzag underlay) with mitred corners and a trim after it.
+- The "." in ע.טכנר is Varela Round's own dot, added like the ״.
+- A JEF file has no hoop code for 140 × 140, so `SHEET1.JEF` declares 140 × 200. The machine chooses the hoop by design size.
+- The files were checked three ways:
+  1. `validate_sheet.py`: bytes, header, the colors 002/218, frame sizes, each letter inside its frame, sewing order.
+  2. Every frame's letters compared with a standalone build of the same name: same shapes, within 0.1 mm.
+  3. Rendered and read.
+
 The old `2_rasap_mifkada.jef` (from an earlier session) stitches upside down with its letters reversed. Don't use it.
 
 ## Making more names
@@ -56,6 +78,16 @@ python embroidery/tools/make_name.py --inkstitch inkstitch --font "פשוט מע
   --batch embroidery/names.txt --outdir embroidery/usb --letter-height 6 --satin-spacing 0.4 --max-width 71
 python embroidery/tools/validate_jef.py embroidery/names.txt embroidery/usb 71 9
 python embroidery/tools/preview.py embroidery/all_names_preview.png 13 embroidery/usb/DR_YAEL.JEF=DR_YAEL.JEF ...
+```
+
+Framed sheets (lines `FILE.JEF | name | name | ...` in a sheets file):
+
+```bash
+python embroidery/tools/make_sheet.py --inkstitch inkstitch --font "פשוט מעוגל Small" \
+  --sheets embroidery/framed/sheets_hoop140.txt --outdir embroidery/framed
+python embroidery/tools/make_sheet.py --inkstitch inkstitch --font "פשוט מעוגל Small" \
+  --sheets embroidery/framed/sheets_hoop200.txt --outdir embroidery/framed --max-height 190
+python embroidery/tools/validate_sheet.py embroidery/framed/sheets_hoop140.txt embroidery/framed 140 140
 ```
 
 `make_name.py` stops if a letter is missing from the font (Ink/Stitch would silently stitch a space) or if Ink/Stitch's

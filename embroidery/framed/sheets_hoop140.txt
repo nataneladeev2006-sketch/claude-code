@@ -1,0 +1,3 @@
+# FILE (8.3 name) | names from top to bottom    -- fits the 140x140 hoop (SQ14b)
+SHEET1.JEF | עמית ממן | עידן רוזנבלום | רועי בלאו
+SHEET2.JEF | ע.טכנר | טכנר
