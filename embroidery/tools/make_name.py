@@ -395,6 +395,12 @@ def load_font(args, needed_chars, tmpdir):
     return font
 
 
+def jef_settings(args):
+    """Writer settings. --jef-trim-codes N writes each trim as N zero-length jumps
+    (Ink/Stitch's default is 3; Janome's own software writes 1)."""
+    return {"trim_at": args.jef_trim_codes} if getattr(args, "jef_trim_codes", None) else {}
+
+
 def make_one(font, text, out, args, scale):
     from lib.output import write_embroidery_file
     docname = os.path.splitext(os.path.basename(out))[0] + ".svg"
@@ -424,7 +430,7 @@ def make_one(font, text, out, args, scale):
         print(f"   {p[0]}: {p[1]} on {p[2]}")
     if errors:
         sys.exit(f"STOP: Ink/Stitch reports errors for '{text}'")
-    write_embroidery_file(os.path.abspath(out), plan, svg)
+    write_embroidery_file(os.path.abspath(out), plan, svg, jef_settings(args))
     if out.lower().endswith(".jef") and args.jef_hoop is not None:
         import struct
         with open(out, "r+b") as f:   # int32 at offset 32 = hoop code; other fields don't depend on it
@@ -469,6 +475,8 @@ def main():
     ap.add_argument("--min-word-gap", type=float, default=1.8, help="smallest word gap allowed by --max-width, mm")
     ap.add_argument("--no-trim-jumps", action="store_true",
                     help="don't add trims at the short jumps inside two-piece letters (ה, ק)")
+    ap.add_argument("--jef-trim-codes", type=int, default=None,
+                    help="write each trim as N zero-length jumps (default: Ink/Stitch's 3; Janome software uses 1)")
     ap.add_argument("--color", default="#523a97", help="thread color (hex); empty keeps the font's colors")
     ap.add_argument("--svg", help="also save the Ink/Stitch SVG (with --batch: any value = one .svg per file)")
     args = ap.parse_args()
