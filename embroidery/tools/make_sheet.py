@@ -99,6 +99,11 @@ def main():
     ap.add_argument("--text-color", default="#000000", help="JEF: #000000 = Black 002")
     ap.add_argument("--frame-color", default="#7fc21c", help="JEF: #7fc21c = Yellow Green 218")
     ap.add_argument("--trim", choices=mn.TRIM_OPTIONS, default="glyph")
+    ap.add_argument("--fit", choices=("all", "each"), default="all",
+                    help="all: one letter size for every name (fits the widest); each: every name gets the target "
+                         "size unless too long, then narrower word gaps, then smaller letters for that name only")
+    ap.add_argument("--min-word-gap", type=float, default=0.35,
+                    help="smallest word gap for --fit each, as a fraction of the letter height (kept when letters shrink)")
     args = ap.parse_args()
 
     sys.path.insert(0, os.path.abspath(args.inkstitch))
@@ -119,25 +124,47 @@ def main():
         needed = set("".join(n for _, names in sheets for n in names)) | {"ש"}
         font = mn.load_font(args, needed, tmpdir)
 
-        # one letter size for every name: the target, or smaller if the widest name needs it
         _, ref, _, _ = mn.build("ש", font, 1.0, "off", None, "ref.svg")
-        scale = args.letter_height / mn.plan_size_mm(ref)[1]
+        ref_h = mn.plan_size_mm(ref)[1]                       # ש height at 100 %, mm
+        target = args.letter_height / ref_h
         room = args.frame_w - 2 * args.border - 2 * args.side_margin
         all_names = sorted({n for _, names in sheets for n in names})
-        widths = {n: mn.plan_size_mm(mn.build(n, font, scale, "off", None, "w.svg")[1])[0] for n in all_names}
-        widest = max(widths, key=widths.get)
-        if widths[widest] > room:
-            scale *= room / widths[widest] * 0.995
-            print(f"note: widest name '{widest}' needs smaller letters: {scale * mn.plan_size_mm(ref)[1]:.2f} mm")
-        if not (font.min_scale <= scale <= font.max_scale):
-            sys.exit(f"STOP: scale {scale*100:.1f}% outside the font's range")
-        if scale < 0.19:
-            sys.exit("STOP: below ~18.5% this font sews over the gap in ה (reads as ח)")
-        # where the letter body (ש) sits relative to the baseline, at this scale
-        _, refplan, _, _ = mn.build("ש", font, scale, "off", None, "ref.svg")
-        body_mid = (refplan.bounding_box[1] + refplan.bounding_box[3]) / 2
-        letter_h = (refplan.bounding_box[3] - refplan.bounding_box[1]) / ppm
-        print(f"font: {font.name} | scale {scale*100:.1f}% | letter height {letter_h:.2f} mm")
+        width = lambda n, sc, ws=0: mn.plan_size_mm(mn.build(n, font, sc, "off", None, "w.svg", word_spacing=ws)[1])[0]
+        widths = {n: width(n, target) for n in all_names}
+        sizing = {}
+        if args.fit == "all":
+            # one letter size for every name: the target, or smaller if the widest name needs it
+            widest = max(widths, key=widths.get)
+            scale = target * min(1.0, room / widths[widest] * 0.995)
+            sizing = {n: (scale, 0.0) for n in all_names}
+        else:
+            for n in all_names:
+                scale, ws = target, 0.0
+                if widths[n] > room and " " in n:
+                    gap = font.word_spacing * scale / ppm               # mm, as stitched
+                    cut = min((widths[n] - room + 0.3) / n.count(" "), gap - args.min_word_gap * args.letter_height)
+                    if cut > 0:
+                        ws = -cut / scale
+                w = width(n, scale, ws)
+                if w > room:
+                    scale = scale * room / w * 0.995
+                    w = width(n, scale, ws)
+                sizing[n] = (scale, ws)
+        for n in all_names:
+            scale, ws = sizing[n]
+            if not (font.min_scale <= scale <= font.max_scale):
+                sys.exit(f"STOP: '{n}': scale {scale*100:.1f}% outside the font's range")
+            if scale < 0.19:
+                sys.exit(f"STOP: '{n}': below ~18.5% this font sews over the gap in ה (reads as ח)")
+            gap_mm = (font.word_spacing + ws * ppm) * scale / ppm
+            print(f"   size: '{n}' letters {ref_h * scale:.2f} mm (scale {scale*100:.1f}%)"
+                  + (f", word gap {gap_mm:.1f} mm" if " " in n else ""))
+        # where the letter body (ש) sits relative to the baseline, at each size used
+        body_mids = {}
+        for scale in {sc for sc, _ in sizing.values()}:
+            _, refplan, _, _ = mn.build("ש", font, scale, "off", None, "ref.svg")
+            body_mids[scale] = (refplan.bounding_box[1] + refplan.bounding_box[3]) / 2
+        print(f"font: {font.name}")
 
         for out, names in sheets:
             n = len(names)
@@ -154,7 +181,13 @@ def main():
 
             groups = []
             for i, (text, cy) in enumerate(zip(names, centers)):
-                g = mn.add_lettering(layer, text, font, scale, args.trim, args.text_color, args.satin_spacing)
+                scale, ws = sizing[text]
+                body_mid = body_mids[scale]                    # baseline-relative middle of the letters
+                g = mn.add_lettering(layer, text, font, scale, args.trim, args.text_color, args.satin_spacing, ws)
+                # at these bigger sizes, trim between the two marks of ״ instead of sewing a joining stitch
+                for node in g.iter():
+                    if node.get("data-extra-glyph") == mn.GERSHAYIM:
+                        node.set(mn.INKSTITCH_NS + "min_jump_stitch_length_mm", "1")
                 placed = glyph_text(g)
                 if placed != text.replace(" ", ""):
                     sys.exit(f"STOP: '{text}' was placed as '{placed}'")

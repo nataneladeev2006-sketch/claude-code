@@ -43,9 +43,19 @@ thread change, then sews the frames in **Yellow Green 218**.
 | `SHEET1.JEF` | עמית ממן / עידן רוזנבלום / רועי בלאו | 100.4 × 115.4 | 140 × 140 (SQ14b) |
 | `SHEET2.JEF` | ע.טכנר / טכנר | 100.4 × 70.4 | 140 × 140 (SQ14b) |
 | `ALL5_BIG.JEF` | all five | 100.4 × 190.4 | 140 × 200 (RE20b) or bigger |
+| `SHEET3.JEF` | ד״ר יעל עזרא / רופא / ליהי סביליה / ליאור לוגסי | 100.4 × 130.4 | 140 × 140 (SQ14b) |
+| `SHEET4.JEF` | הראל כהן / יסמין קאקזנוב / ליאור זוהרה לוגסי / דקל שרוני | 100.4 × 130.4 | 140 × 140 (SQ14b) |
+
+A 140 × 140 hoop holds at most **4** frames of 100 × 25 mm, stacked in one column. Two frames side by side are
+about 21 cm wide and don't fit any hoop up to 200 × 200.
 
 Notes:
-- One letter size (9.00 mm, scale 28 %) for every name; the widest, עידן רוזנבלום, fits with 1.4 mm to spare.
+- SHEET1, SHEET2 and ALL5_BIG use one letter size, 9.00 mm (scale 28 %), for every name. The widest name,
+  עידן רוזנבלום, fits with 1.4 mm to spare.
+- SHEET3 and SHEET4 size each name on its own (`--fit each`): 9 mm letters wherever the name fits.
+  יסמין קאקזנוב keeps 9 mm with narrower word gaps (3.9 mm). ליאור זוהרה לוגסי gets 7.26 mm letters and 2.5 mm word
+  gaps (about 35 % of the letter height, the same as its single patch).
+- At these sizes the machine trims between the two marks of ״, and inside ש, ק and ה, so no thread is left between the pieces.
 - Each frame is one satin column (4 mm, contour + zigzag underlay) with mitred corners and a trim after it.
 - The "." in ע.טכנר is Varela Round's own dot, added like the ״.
 - A JEF file has no hoop code for 140 × 140, so `SHEET1.JEF` declares 140 × 200. The machine chooses the hoop by design size.
@@ -87,6 +97,8 @@ python embroidery/tools/make_sheet.py --inkstitch inkstitch --font "פשוט מ�
   --sheets embroidery/framed/sheets_hoop140.txt --outdir embroidery/framed
 python embroidery/tools/make_sheet.py --inkstitch inkstitch --font "פשוט מעוגל Small" \
   --sheets embroidery/framed/sheets_hoop200.txt --outdir embroidery/framed --max-height 190
+python embroidery/tools/make_sheet.py --inkstitch inkstitch --font "פשוט מעוגל Small" \
+  --sheets embroidery/framed/sheets_4per_hoop140.txt --outdir embroidery/framed --fit each --max-height 130
 python embroidery/tools/validate_sheet.py embroidery/framed/sheets_hoop140.txt embroidery/framed 140 140
 ```
 

@@ -196,6 +196,7 @@ def add_extra_glyphs(font_dir, out_dir, chars):
                 if spec["min_jump_mm"]:
                     satin.set("{http://inkstitch.org/namespace}min_jump_stitch_length_mm", spec["min_jump_mm"])
                 satin.set("style", template.get("style"))
+                satin.set("data-extra-glyph", ch)          # lets callers find these satins later
                 satin.set("inkscape:label", f"Colonne satin {i}")
                 satin.set("id", f"extra_satin_{variant}_{n}_{i}")
                 satin.set("d", _satin_d(stroke))

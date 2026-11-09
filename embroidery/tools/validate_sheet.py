@@ -94,8 +94,12 @@ def check(path, names, max_w, max_h, fw, fh, border):
     for k, (name, pcs) in enumerate(zip(names, per)):
         letters = len(name.replace(" ", ""))
         if len(pcs) < letters: P.append(f"frame {k+1} '{name}': {len(pcs)} pieces < {letters} letters")
-        rights = [p[1] for p in pcs]
-        if rights != sorted(rights, reverse=True): P.append(f"frame {k+1}: not sewn right-to-left")
+        # Hebrew is sewn right to left: each piece's middle must not move right by more than 2 mm
+        # (a letter sewn in two pieces, e.g. ש's inner stroke before its bowl, may shift a little;
+        # a swapped letter or word moves by a whole letter, 4+ mm)
+        mids = [(p[0] + p[1]) / 2 for p in pcs]
+        if any(b > a + 2.0 for a, b in zip(mids, mids[1:])) or (pcs and (mids[0] < max(mids) - 2.0 or mids[-1] > min(mids) + 2.0)):
+            P.append(f"frame {k+1}: not sewn right-to-left")
         if pcs:
             cx_text = (min(p[0] for p in pcs) + max(p[1] for p in pcs)) / 2
             cx_frame = (fb[k][0] + fb[k][2]) / 2
