@@ -85,11 +85,20 @@ Janome's own software writes 1 (pyembroidery issue #54). So there are two versio
 `tools/make_name.py` uses a counter instead of Ink/Stitch's random 0–9999 element ids. With many copies of the same
 letter in one file, those random ids could collide and crash the build. Only ids change, never stitches.
 
-## 5 names incl. the special patch: `framed/NAMES5A.JEF` / `NAMES5B.JEF`
+## Last 4 names incl. the special patch: `framed/NAMES4A.JEF`
 
-אביטל ברדה, דוד יצקסון, נווה לזניק, שלו מימון, and **נתנאל אדייב** in the chosen design (Magen David + double frame,
-written `נתנאל אדייב @david` in the sheets file). 100.4 × 151 mm for the 20 × 20 hoop, one thread, versions A and B as
-for NAMES9. Frame 5 matches the approved preview `special_preview/SPECIAL_david.JEF` piece for piece.
+דוד יצקסון, נווה לזניק, שלו מימון, and **נתנאל אדייב** in the chosen design (Magen David + double frame, written
+`נתנאל אדייב @david` in the sheets file). One column of 4, 100.4 × 119.6 mm, so it fits the 14 × 14 hoop as well as the
+20 × 20. One thread, 1-code cuts (version A). It replaces NAMES5A/NAMES5B, which also had אביטל ברדה; that patch is
+already sewn. Each frame matches its standalone build and the same patch in NAMES5A piece for piece, and frame 4
+matches the approved preview `special_preview/SPECIAL_david.JEF`.
+
+## Status
+
+- **Sewn (11):** עמית ממן, עידן רוזנבלום, רועי בלאו, ע.טכנר, טכנר, אחות, הראל כהן, ד״ר יעל עזרא, רופא, ליהי סביליה,
+  אביטל ברדה.
+- **Still to sew (9):** `REDO5A.JEF` (ליאור לוגסי, יסמין קאקזנוב, ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני) and
+  `NAMES4A.JEF` (דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב).
 
 ## Redo: `framed/REDO5A.JEF`
 
