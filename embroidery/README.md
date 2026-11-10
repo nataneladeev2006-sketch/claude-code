@@ -133,6 +133,14 @@ for the birds, an independent `emblem_patch.py` build): 95.4–97.2% overlap, at
 differs only in the header date; rendered and read. FINAL9A rebuilt with the new tools is unchanged, and all earlier
 sheets still pass.
 
+## 3 more names: `framed/NAMES3A.JEF`
+
+ליאור זוהרה לוגסי (7.26 mm letters, as in the earlier files), יאיר פריבש, ליהי סיביליה (spelled with י after ס, as
+written this time; the patch sewn earlier was ליהי סביליה). Normal framed patches, one column of 3, 100.4 × 88.2 mm,
+14 × 14 or 20 × 20 hoop, one thread, 1-code cuts. Checked twice: validator; each patch vs a standalone build (and
+ליאור זוהרה לוגסי vs the earlier build of the same name), all the same; a full rebuild differs only in the header date;
+rendered and read.
+
 ## The emblem alone, 10 cm wide: `emblem/WINGS10.JEF`
 
 The winged owl emblem by itself (no frame, no name), traced from the sharper picture `emblem/owl_wings_hd.png`:
@@ -161,8 +169,8 @@ the same scale: 99.7% of the picture's black is covered by thread and 100% of th
   אביטל ברדה.
 - **Still to sew (13):** `FINAL9A.JEF` (ליאור לוגסי, יסמין קאקזנוב, דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב,
   ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני; one hooping, 20 × 20) and `BIRDS4A.JEF` (אבירן בירן, רומי שלם, שקד ברנס
-  with the bird, יסמין קאקזנוב with the angry face and flowers; 14 × 14 or 20 × 20), plus the emblem alone
-  `emblem/WINGS10.JEF` (10 × 3.3 cm). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
+  with the bird, יסמין קאקזנוב with the angry face and flowers; 14 × 14 or 20 × 20), `NAMES3A.JEF` (ליאור זוהרה
+  לוגסי, יאיר פריבש, ליהי סיביליה), plus the emblem alone `emblem/WINGS10.JEF` (10 × 3.3 cm). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
   patches as FINAL9A in two hoopings: sew FINAL9A or those two, never both.
 
 ## Redo: `framed/REDO5A.JEF`
