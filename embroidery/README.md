@@ -105,18 +105,20 @@ Checks: `validate_sheet.py`; every patch compared with its standalone build and 
 date/time field; rendered and read. The earlier float-based shape check could dip below 90% on the tiny Magen David
 triangles from pixel rounding alone (their stitches were identical), so the comparison now uses integer coordinates.
 
-## 4 new patches with emblems: `framed/NEW4A.JEF`
+## 3 bird-emblem patches + the angry-face יסמין: `framed/BIRDS4A.JEF`
 
-One column of 4 standard frames, 100.4 × 119.6 mm (14 × 14 or 20 × 20 hoop), one thread, 1-code cuts, 15,079 needle
+One column of 4 standard frames, 100.4 × 119.6 mm (14 × 14 or 20 × 20 hoop), one thread, 1-code cuts, 16,138 needle
 stitches:
 
 1. **אבירן בירן** `@bird`: the winged owl emblem with sword and crosshair (traced from `emblem/owl_wings.png`) on the
    left, 38.8 × 13 mm, and the name on the right.
 2. **רומי שלם** `@bird`: same design.
-3. **יסמין קאקזנוב** `@angry`: an angry face (filled circle with the `> <` eyes and the frown left open), an anger mark
+3. **שקד ברנס** `@bird`: same design.
+4. **יסמין קאקזנוב** `@angry`: an angry face (filled circle with the `> <` eyes and the frown left open), an anger mark
    and a cherry blossom on the left, a second cherry blossom at the right end. This is an extra, decorated patch;
    FINAL9A keeps the plain יסמין קאקזנוב.
-4. **עידן עזרא**: a normal patch.
+
+It replaces NEW4A, which had עידן עזרא (a normal patch) instead of שקד ברנס; עידן עזרא was dropped.
 
 Emblem tracing (`tools/emblem.py`): black areas wider than 4 source px become fill (rows along each area's long axis,
 0.25 mm apart, pulled in 0.3 mm and outlined with a running stitch so thin pointed tips come out the same wherever the
@@ -126,18 +128,18 @@ reticle (`--emblem-crosshair 251,124,19.5,12.5,0`). `tools/emblem_patch.py` buil
 (also a 100 × 51.5 mm "emblem above the name" layout).
 
 Checks: `validate_sheet.py` (it now knows the side layout: ornament on the left, name centered in the rest, the
-right-end flower of `@angry`); each patch compared with its standalone build (`special.py --style bird|angry`, an
-independent `emblem_patch.py` build, a single-name sheet): 95.4–99.0% overlap, 0.00 mm edge shift; a full rebuild
-differs only in the header date; rebuilt from the repo files alone; rendered and read. FINAL9A rebuilt with the new
-tools is unchanged, and all earlier sheets still pass.
+right-end flower of `@angry`); each patch compared with its standalone builds (`special.py --style bird|angry` and,
+for the birds, an independent `emblem_patch.py` build): 95.4–97.2% overlap, at most 0.1 mm edge shift; a full rebuild
+differs only in the header date; rendered and read. FINAL9A rebuilt with the new tools is unchanged, and all earlier
+sheets still pass.
 
 ## Status
 
 - **Sewn (11):** עמית ממן, עידן רוזנבלום, רועי בלאו, ע.טכנר, טכנר, אחות, הראל כהן, ד״ר יעל עזרא, רופא, ליהי סביליה,
   אביטל ברדה.
 - **Still to sew (13):** `FINAL9A.JEF` (ליאור לוגסי, יסמין קאקזנוב, דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב,
-  ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני; one hooping, 20 × 20) and `NEW4A.JEF` (אבירן בירן, רומי שלם, יסמין
-  קאקזנוב with the angry face and flowers, עידן עזרא; 14 × 14 or 20 × 20). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
+  ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני; one hooping, 20 × 20) and `BIRDS4A.JEF` (אבירן בירן, רומי שלם, שקד ברנס
+  with the bird, יסמין קאקזנוב with the angry face and flowers; 14 × 14 or 20 × 20). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
   patches as FINAL9A in two hoopings: sew FINAL9A or those two, never both.
 
 ## Redo: `framed/REDO5A.JEF`
@@ -153,7 +155,7 @@ the 9-frame layout fills almost the whole 20 × 20 field. A single column of 5 l
 
 Three designs for נתנאל אדייב (`tools/special.py`), all 100 × 25 mm in one thread: stars with a double frame, Magen
 David with a double frame, and the חוכמה calligraphy font with stars. They wait for a choice before being added to a sheet.
-`special.py` also has the side-ornament styles `bird` (needs `--emblem-image`) and `angry` used in NEW4A; in a sheets
+`special.py` also has the side-ornament styles `bird` (needs `--emblem-image`) and `angry` used in BIRDS4A; in a sheets
 file they are written `name @bird` / `name @angry`.
 
 The old `2_rasap_mifkada.jef` (from an earlier session) stitches upside down with its letters reversed. Don't use it.
@@ -198,10 +200,10 @@ Sheets with emblem patches (`@bird`) also need `pip install opencv-python-headle
 
 ```bash
 python embroidery/tools/make_sheet.py --inkstitch inkstitch --font "פשוט מעוגל Small" \
-  --sheets embroidery/framed/sheets_new4_A.txt --outdir embroidery/framed --fit each --layout fill --hoop 196x196 \
+  --sheets embroidery/framed/sheets_birds4_A.txt --outdir embroidery/framed --fit each --layout fill --hoop 196x196 \
   --gap 6 --cut-codes 1 --text-color "#000000" --frame-color "#000000" \
   --emblem-image embroidery/emblem/owl_wings.png --emblem-crosshair "251,124,19.5,12.5,0"
-python embroidery/tools/validate_sheet.py embroidery/framed/sheets_new4_A.txt embroidery/framed 140 140 --cut-codes 1 --colors 1
+python embroidery/tools/validate_sheet.py embroidery/framed/sheets_birds4_A.txt embroidery/framed 140 140 --cut-codes 1 --colors 1
 ```
 
 `make_name.py` stops if a letter is missing from the font (Ink/Stitch would silently stitch a space) or if Ink/Stitch's
