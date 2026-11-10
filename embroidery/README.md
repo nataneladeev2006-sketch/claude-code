@@ -141,12 +141,12 @@ written this time; the patch sewn earlier was ליהי סביליה). Normal fra
 ליאור זוהרה לוגסי vs the earlier build of the same name), all the same; a full rebuild differs only in the header date;
 rendered and read.
 
-## Logistics titles + a name: `framed/LOGI3A.JEF`
+## Logistics titles + names: `framed/LOGI4A.JEF`
 
 סמלת לוגיסטיקה (7.41 mm letters, word gap narrowed to 2.6 mm to fit), נגדת לוגיסטיקה (8.08 mm, 2.8 mm gap),
-סיאל יעקב (9 mm). Normal framed patches, one column of 3, 100.4 × 88.2 mm, 14 × 14 or 20 × 20 hoop, one thread, 1-code
-cuts. Checked twice like NAMES3A: validator, each patch vs a standalone build, a full rebuild (differs only in the
-header date), rendered and read.
+סיאל יעקב (9 mm), אילאי קורש (9 mm). Normal framed patches, one column of 4, 100.4 × 119.6 mm, 14 × 14 or 20 × 20
+hoop, one thread, 1-code cuts. It replaces LOGI3A (the same first three patches, without אילאי קורש). Checked twice like
+NAMES3A: validator, each patch vs a standalone build, a full rebuild (differs only in the header date), rendered and read.
 
 ## The emblem alone, 10 cm wide: `emblem/WINGS10.JEF`
 
@@ -177,7 +177,7 @@ the same scale: 99.7% of the picture's black is covered by thread and 100% of th
 - **Still to sew (13):** `FINAL9A.JEF` (ליאור לוגסי, יסמין קאקזנוב, דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב,
   ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני; one hooping, 20 × 20) and `BIRDS4A.JEF` (אבירן בירן, רומי שלם, שקד ברנס
   with the bird, יסמין קאקזנוב with the angry face and flowers; 14 × 14 or 20 × 20), `NAMES3A.JEF` (ליאור זוהרה
-  לוגסי, יאיר פריבש, ליהי סיביליה), `LOGI3A.JEF` (סמלת לוגיסטיקה, נגדת לוגיסטיקה, סיאל יעקב), plus the emblem alone
+  לוגסי, יאיר פריבש, ליהי סיביליה), `LOGI4A.JEF` (סמלת לוגיסטיקה, נגדת לוגיסטיקה, סיאל יעקב, אילאי קורש), plus the emblem alone
   `emblem/WINGS10.JEF` (10 × 3.3 cm). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
   patches as FINAL9A in two hoopings: sew FINAL9A or those two, never both.
 
