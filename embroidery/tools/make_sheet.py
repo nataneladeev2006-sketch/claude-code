@@ -133,6 +133,8 @@ def main():
     ap.add_argument("--letter-height", type=float, default=9.0, help="target height of a normal letter (ש), mm")
     ap.add_argument("--side-margin", type=float, default=3.0, help="min space between text and frame inside, mm")
     ap.add_argument("--satin-spacing", type=float, default=0.4, help="text satin density, mm")
+    ap.add_argument("--emblem-image", help="picture for '@bird' special patches")
+    ap.add_argument("--emblem-crosshair", default="", help="'@bird': cx,cy,r_cut,r_inner[,r_mid] in source px")
     ap.add_argument("--frame-spacing", type=float, default=0.4, help="frame satin density, mm")
     ap.add_argument("--text-color", default="#000000", help="JEF: #000000 = Black 002")
     ap.add_argument("--frame-color", default="#7fc21c", help="JEF: #7fc21c = Yellow Green 218")
@@ -157,7 +159,7 @@ def main():
     from lib.svg import PIXELS_PER_MM as ppm
 
     sheets = []
-    special_styles = {}                       # name -> special.py style ("stars", "david", "calligraphy")
+    special_styles = {}                       # name -> special.py style ("stars", "david", "calligraphy", "bird", "angry")
     with open(args.sheets, encoding="utf-8") as f:
         for line in f:
             if line.strip() and not line.lstrip().startswith("#"):

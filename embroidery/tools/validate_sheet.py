@@ -130,7 +130,43 @@ def check(path, names, max_w, max_h, cut_codes, ncolors, specials=()):
     if seen != list(range(len(frames)))[:len(seen)]: P.append("names not sewn in the same order as their frames")
     for f, pcs in enumerate(per):
         name = names[seen.index(f)] if f in seen else "?"
-        if name in specials and pcs:
+        side_style = specials.get(name) in ("bird", "angry") if isinstance(specials, dict) else False
+        if side_style and pcs:
+            # ornament on the left, name on the right: the first cluster of pieces from the left (gaps < 1.8 mm) is
+            # the ornament; it must end >= 1.8 mm before the name, and the name sits centered in the rest of the frame
+            fb = frames[f][0]; fcy = (fb[1] + fb[3]) / 2
+            srt = sorted(pcs, key=lambda q: q[0]); reach = srt[0][2]; orn = [srt[0]]
+            for q in srt[1:]:
+                if q[0] < reach + 1.8: orn.append(q); reach = max(reach, q[2])
+                else: break
+            pcs = [q for q in pcs if q not in orn]
+            rorn = []
+            if specials[name] == "angry" and pcs:             # flower at the right end
+                srt = sorted(pcs, key=lambda q: -q[2]); reach = srt[0][0]; rorn = [srt[0]]
+                for q in srt[1:]:
+                    if q[2] > reach - 1.8: rorn.append(q); reach = min(reach, q[0])
+                    else: break
+                pcs = [q for q in pcs if q not in rorn]
+            ox0, oy0 = min(q[0] for q in orn), min(q[1] for q in orn)
+            ox1, oy1 = max(q[2] for q in orn), max(q[3] for q in orn)
+            if not pcs: P.append(f"frame {f+1} '{name}': no name next to the ornament")
+            else:
+                nx0, nx1 = min(q[0] for q in pcs), max(q[2] for q in pcs)
+                ny0, ny1 = min(q[1] for q in pcs), max(q[3] for q in pcs)
+                rlim = (min(q[0] for q in rorn) - 2.5) if rorn else (fb[2] - BORDER - 1.6)
+                area = (ox1 + 2.5 + rlim) / 2
+                if rorn:
+                    rx0, ry0, rx1, ry1 = min(q[0] for q in rorn), min(q[1] for q in rorn), max(q[2] for q in rorn), max(q[3] for q in rorn)
+                    if abs(rx1 - (fb[2] - BORDER - 1.6)) > 0.6: P.append(f"frame {f+1} '{name}': right ornament not at the right end")
+                    if abs((ry0 + ry1) / 2 - fcy) > 0.6: P.append(f"frame {f+1} '{name}': right ornament not centered vertically")
+                    if nx1 > rx0 - 1.8: P.append(f"frame {f+1} '{name}': name too close to the right ornament")
+                if abs((nx0 + nx1) / 2 - area) > 0.8: P.append(f"frame {f+1} '{name}': name not centered next to the ornament")
+                if abs((ny0 + ny1) / 2 - fcy) > 0.6: P.append(f"frame {f+1} '{name}': name not centered vertically")
+            if abs(ox0 - (fb[0] + BORDER + 1.6)) > 0.6: P.append(f"frame {f+1} '{name}': ornament not at the left")
+            if abs((oy0 + oy1) / 2 - fcy) > 0.6: P.append(f"frame {f+1} '{name}': ornament not centered vertically")
+            special_report.append(f"frame {f+1}: {specials[name]} ornament {ox1-ox0:.1f} x {oy1-oy0:.1f} mm in {len(orn)} pieces"
+                                  + (f", right ornament {len(rorn)} piece(s)" if rorn else "") + f", letters {len(pcs)} pieces")
+        elif name in specials and pcs:
             # special patch: inner frame line (long), two ornaments (outside the name), then the letters
             fb = frames[f][0]; fcx = (fb[0] + fb[2]) / 2; fcy = (fb[1] + fb[3]) / 2
             line = [q for q in pcs if q[2] - q[0] > 80]
@@ -157,7 +193,7 @@ def check(path, names, max_w, max_h, cut_codes, ncolors, specials=()):
         fb = frames[f][0]
         tx = (min(p[0] for p in pcs) + max(p[2] for p in pcs)) / 2
         ty = (min(p[1] for p in pcs) + max(p[3] for p in pcs)) / 2
-        if horizontal and abs(tx - (fb[0] + fb[2]) / 2) > 0.5: P.append(f"frame {f+1}: text off-center")
+        if horizontal and not side_style and abs(tx - (fb[0] + fb[2]) / 2) > 0.5: P.append(f"frame {f+1}: text off-center")
         if not horizontal and abs(ty - (fb[1] + fb[3]) / 2) > 0.5: P.append(f"frame {f+1}: text off-center")
     p = pe.read(path)
     x0, y0, x1, y1 = p.bounds()
@@ -183,12 +219,12 @@ def main():
             continue
         parts = [x.strip() for x in line.split("|")]
         f = parts[0]
-        names, specials = [], set()
+        names, specials = [], {}
         for x in parts[1:]:
             if not x: continue
             nm = " ".join(x.split("@")[0].split())
             names.append(nm)
-            if "@" in x: specials.add(nm)
+            if "@" in x: specials[nm] = x.split("@", 1)[1].strip()
         P, r = check(os.path.join(folder, f), names, max_w, max_h, cut_codes, ncolors, specials)
         size = r.get("size", (0, 0))
         print(f"{'PASS' if not P else 'FAIL'} {f:12s} {size[0]:5.1f} x {size[1]:5.1f} mm  frames {len(r.get('per', []))} "
