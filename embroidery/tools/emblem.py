@@ -15,10 +15,14 @@ from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops import unary_union
 from skimage.morphology import skeletonize
 
-UP = 4   # work at 4x the source resolution
+REF_W = 492.0   # emblem width (source px) the size settings below were tuned on
+UP = 4.0        # working px per "normalized px" (1/492 of the emblem width); set by load_mask() for each picture
+# All sizes given to these functions and all coordinates they return are in normalized px, so a sharper or bigger
+# picture of the same emblem gives the same proportions: the picture is worked at ~4 working px per normalized px.
 
 
 def load_mask(path, min_area=12, drop_border=True):
+    global UP
     im = Image.open(path).convert("RGBA")
     bg = Image.new("RGBA", im.size, (255, 255, 255, 255)); bg.alpha_composite(im)
     g = np.array(bg.convert("L"))
@@ -28,14 +32,22 @@ def load_mask(path, min_area=12, drop_border=True):
     keep = np.zeros(n, bool)
     for i in range(1, n):
         x, y, w, h, a = st[i]
-        if a < min_area: continue
-        if drop_border and ((w <= 2 and h > 0.8 * H) or (h <= 2 and w > 0.8 * W)): continue   # screenshot edge line
+        touches = x == 0 or y == 0 or x + w == W or y + h == H
+        if drop_border and touches and ((w > 0.8 * W and h < 0.06 * H) or (h > 0.8 * H and w < 0.06 * W)):
+            continue                                       # screenshot edge line / bar
         keep[i] = True
+    # emblem width (ignoring specks) sets the scale; then drop specks relative to that scale
+    big_ones = [i for i in range(1, n) if keep[i] and st[i, 4] >= min_area]
+    x0 = min(st[i, 0] for i in big_ones); x1 = max(st[i, 0] + st[i, 2] - 1 for i in big_ones)
+    norm = (x1 - x0 + 1) / REF_W                           # source px per normalized px
+    for i in range(1, n):
+        if keep[i] and st[i, 4] < min_area * norm * norm: keep[i] = False
+    up = max(1, int(round(4 * REF_W / (x1 - x0 + 1))))     # integer upscale so we work at ~4 px per normalized px
+    UP = up * norm
     clean = keep[lab]
-    # work on a smooth 4x upscale of the cleaned grayscale
     g2 = np.where(clean | (g >= 128), g, 255).astype(np.uint8)
     g2 = np.where(~clean & (g < 128), 255, g2).astype(np.uint8)
-    big = cv2.resize(g2, (W * UP, H * UP), interpolation=cv2.INTER_CUBIC)
+    big = cv2.resize(g2, (W * up, H * up), interpolation=cv2.INTER_CUBIC) if up > 1 else g2
     mask = big < 128
     ys, xs = np.nonzero(mask)
     box = (xs.min(), ys.min(), xs.max(), ys.max())
@@ -54,9 +66,16 @@ def split(mask, min_fill_px, min_fill_area=150):
     # give each fill its original outline back (pointed tips etc.): the black within r+1 px of its core
     kr = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 3, 2 * r + 3))
     thick = mask & cv2.dilate(thick.astype(np.uint8), kr).astype(bool)
-    # no lines within ~1.5 source px of a fill (removes leftover slivers along fill edges)
-    k2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))
-    thin = mask & ~cv2.dilate(thick.astype(np.uint8), k2).astype(bool)
+    # no lines within ~1.5 normalized px of a big fill (removes leftover slivers along fill edges); small fills
+    # (below 150 normalized px^2: pupils, a beak, where a line gets thicker) only take their own pixels, so the lines
+    # running into them stay whole
+    e = 2 * int(round(1.5 * UP)) + 1                       # 13 x 13 at 4 working px per normalized px
+    k2 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (e, e))
+    n2, lab2, st2, _ = cv2.connectedComponentsWithStats(thick.astype(np.uint8), connectivity=8)
+    big = np.zeros(n2, bool); big[1:] = st2[1:, 4] >= 150 * UP * UP
+    big_fill = big[lab2]; small_fill = thick & ~big_fill
+    k3 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    thin = mask & ~cv2.dilate(big_fill.astype(np.uint8), k2).astype(bool) & ~cv2.dilate(small_fill.astype(np.uint8), k3).astype(bool)
     return thick, thin
 
 
@@ -75,8 +94,8 @@ def fill_polygons(thick, eps=1.0):
             if len(h) >= 3: holes.append(h)
             j = hier[j][0]
         if len(outer) >= 3:
-            p = Polygon(outer, holes).buffer(0)
-            if not p.is_empty: polys.append(p)
+            p = Polygon(outer, holes).buffer(0)          # may split a self-touching outline into parts
+            polys.extend(g for g in (p.geoms if hasattr(p, "geoms") else [p]) if not g.is_empty)
     return polys
 
 
@@ -228,3 +247,25 @@ def replace_crosshair(M, cx, cy, r_cut, r_inner, r_mid=None, n=72):
         st = node(cx + r_mid * math.cos(angs[0]), cy + r_mid * math.sin(angs[0]))
         M.add_edge(st, st, pts=np.c_[cx + r_mid * np.cos(angs), cy + r_mid * np.sin(angs)], cls="thin")
     return M
+
+
+def snap_to_fills(M, polys, max_d=2.5):
+    """Lines that end within max_d normalized px of a fill are extended to touch it (closes the small gaps the
+    keep-away zone leaves where an outline runs into a solid area). Returns the number of ends extended."""
+    from shapely.geometry import Point
+    from shapely.ops import nearest_points, unary_union
+    if not polys: return 0
+    fills = unary_union(polys)
+    n = 0
+    for node in [q for q in list(M) if M.degree(q) == 1]:
+        u, v, k, d = next(iter(M.edges(node, keys=True, data=True)))
+        pts = d["pts"]
+        at_start = math.dist(pts[0] * UP, node) <= math.dist(pts[-1] * UP, node)
+        end = Point(pts[0] if at_start else pts[-1])
+        dist = end.distance(fills)
+        if 0.05 < dist <= max_d:
+            q = nearest_points(end, fills)[1]
+            ext = np.array([[q.x, q.y]])
+            d["pts"] = np.vstack([ext, pts]) if at_start else np.vstack([pts, ext])
+            n += 1
+    return n

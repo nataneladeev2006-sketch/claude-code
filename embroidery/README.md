@@ -133,13 +133,36 @@ for the birds, an independent `emblem_patch.py` build): 95.4–97.2% overlap, at
 differs only in the header date; rendered and read. FINAL9A rebuilt with the new tools is unchanged, and all earlier
 sheets still pass.
 
+## The emblem alone, 10 cm wide: `emblem/WINGS10.JEF`
+
+The winged owl emblem by itself (no frame, no name), traced from the sharper picture `emblem/owl_wings_hd.png`:
+100 × 32.6 mm as stitched (the emblem is ~3:1, so 10 cm wide is 3.3 cm tall), one thread, 1-code cuts, 4,104 needle
+stitches, longest needle stitch 3.1 mm, 14 × 14 hoop. At this size everything is kept: the six stripes (fill, pulled in
+0.15 mm so the white gaps stay open), the owl's crown, dark side, beak and pupils (fill), all crosshair rings and the
+cross, the feathers and the sword with its dark center (triple-stitch lines, extended to touch the fills they run into).
+
+```bash
+python embroidery/tools/emblem_patch.py --inkstitch inkstitch --image embroidery/emblem/owl_wings_hd.png --layout alone \
+  --emblem-w 100 --min-fill-area 15 --fill-inset 0.15 --inset-min-area 1000 --snap 4 --fill-outline 1 --bean 1 \
+  --line-len 1.2 --out embroidery/emblem/WINGS10.JEF
+```
+
+`emblem.py` now works in "normalized px" (1/492 of the emblem's width), so pictures of any resolution get the same
+settings; the old 496 px picture gives exactly the same result as before (BIRDS4A rebuilds unchanged).
+
+Checks (twice, the second time on a full rebuild that differs only in the header date): file structure (one color,
+single-code cuts, no loose jumps, size, centered), and the stitches drawn 0.45 mm wide against the picture's black at
+the same scale: 99.7% of the picture's black is covered by thread and 100% of the thread lies on the picture's black
+(0.35 mm tolerance); a mirrored copy would match worse (96.0%), so it is not flipped.
+
 ## Status
 
 - **Sewn (11):** עמית ממן, עידן רוזנבלום, רועי בלאו, ע.טכנר, טכנר, אחות, הראל כהן, ד״ר יעל עזרא, רופא, ליהי סביליה,
   אביטל ברדה.
 - **Still to sew (13):** `FINAL9A.JEF` (ליאור לוגסי, יסמין קאקזנוב, דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב,
   ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני; one hooping, 20 × 20) and `BIRDS4A.JEF` (אבירן בירן, רומי שלם, שקד ברנס
-  with the bird, יסמין קאקזנוב with the angry face and flowers; 14 × 14 or 20 × 20). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
+  with the bird, יסמין קאקזנוב with the angry face and flowers; 14 × 14 or 20 × 20), plus the emblem alone
+  `emblem/WINGS10.JEF` (10 × 3.3 cm). `REDO5A.JEF` + `NAMES4A.JEF` hold the same
   patches as FINAL9A in two hoopings: sew FINAL9A or those two, never both.
 
 ## Redo: `framed/REDO5A.JEF`

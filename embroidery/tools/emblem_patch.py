@@ -3,6 +3,7 @@
 emblem_patch.py - a framed name patch with an embroidered emblem traced from a picture (one thread color).
   --layout top  : emblem on top, name below, taller frame (100 mm wide, height to fit)
   --layout side : standard 100 x 25 mm frame, small emblem on the left, name on the right
+  --layout alone: just the emblem, --emblem-w wide (no frame, no name)
 Emblem: thick black areas = fill stitch (+ crisp running outline), thin lines = running stitch
 (triple stitch where --bean 1), routed into continuous runs. Sewing order: emblem fills, emblem lines, name, frame.
 """
@@ -52,6 +53,8 @@ def add_emblem(layer, geo, x0_mm, y0_mm, w_mm, ppm, a, color, prefix="emb"):
     if float(a.fill_inset) > 0:                     # small sizes: pull fills in so the white gaps survive
         out = []
         for p in polys:
+            if p.area < getattr(a, "inset_min_area", 0.0):
+                out.append(p); continue
             q = p.buffer(-float(a.fill_inset) / s, join_style=2)
             parts = [g for g in (q.geoms if hasattr(q, "geoms") else [q]) if not g.is_empty]
             # keep a small fill as it is when pulling it in would shrink it too much
@@ -104,17 +107,20 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--inkstitch", required=True)
     ap.add_argument("--image", required=True)
-    ap.add_argument("--text", required=True)
-    ap.add_argument("--layout", choices=("top", "side"), required=True)
+    ap.add_argument("--text", default="")
+    ap.add_argument("--layout", choices=("top", "side", "alone"), required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--font", default="פשוט מעוגל Small")
     ap.add_argument("--emblem-w", type=float, help="emblem width mm (top: default 78; side: from --emblem-h)")
     ap.add_argument("--emblem-h", type=float, default=13.0, help="side layout: emblem height mm")
     ap.add_argument("--letter-height", type=float, default=9.0)
     ap.add_argument("--min-fill-px", type=float, default=4.0)
+    ap.add_argument("--min-fill-area", type=float, default=150.0, help="smallest solid area sewn as fill (normalized px^2)")
     ap.add_argument("--line-len", default="1.2"); ap.add_argument("--bean", default="1")
     ap.add_argument("--outline-len", default="1.0"); ap.add_argument("--fill-spacing", default="0.25")
     ap.add_argument("--fill-inset", default="0", help="mm to pull each fill in (small sizes)")
+    ap.add_argument("--inset-min-area", type=float, default=0.0, help="only pull in fills at least this big (n-px^2)")
+    ap.add_argument("--snap", type=float, default=0.0, help="extend line ends within this many n-px of a fill to it")
     ap.add_argument("--fill-outline", default="1", help="1 = running stitch around each fill")
     ap.add_argument("--frame-w", type=float, default=100.0); ap.add_argument("--border", type=float, default=4.0)
     ap.add_argument("--clear", type=float, default=1.6, help="space between frame and content, mm")
@@ -129,15 +135,30 @@ def main():
     tmp = tempfile.mkdtemp(prefix="emblem_")
     try:
         mask, box = em.load_mask(a.image)
-        thick, thin = em.split(mask, a.min_fill_px)
+        thick, thin = em.split(mask, a.min_fill_px, a.min_fill_area)
         polys = em.fill_polygons(thick)
         M = em.centerlines(thin)
+        if a.snap > 0:
+            print(f"   lines extended to touch a fill: {em.snap_to_fills(M, polys, a.snap)}")
         if a.crosshair:
             v = [float(t) for t in a.crosshair.split(",")]
             em.replace_crosshair(M, v[0], v[1], v[2], v[3], v[4] if len(v) > 4 and v[4] > 0 else None)
         runs = em.route(M)
         b = tuple(v / em.UP for v in box)
         aspect = (b[3] - b[1]) / (b[2] - b[0])
+        if a.layout == "alone":
+            ew = a.emblem_w or 100.0; eh = ew * aspect
+            svg, layer = mn.new_document(os.path.basename(a.out) + ".svg", ew + 20, eh + 20)
+            s, nruns = add_emblem(layer, (polys, runs, b), 10.0, 10.0, ew, ppm, a, a.color)
+            plan, problems = mn.plan_from_nodes(svg, check=True, trim_jumps=True)
+            for p in problems: print(f"   {p[0]}: {p[1]} on {p[2]}")
+            if any(p[0] == "ERROR" for p in problems): sys.exit("STOP: Ink/Stitch reports errors")
+            write_embroidery_file(os.path.abspath(a.out), plan, svg, {"trim_at": 1})
+            open(os.path.abspath(a.out) + ".svg", "w", encoding="utf-8").write(svg.tostring().decode("utf-8"))
+            w, h = mn.plan_size_mm(plan)
+            print(f"wrote {a.out}: emblem alone {ew:.1f} x {eh:.1f} mm ({s:.4f} mm/n-px, {len(polys)} fills, {len(runs)} line runs), "
+                  f"stitched {w:.1f} x {h:.1f} mm, ~{sum(len(x) for x in plan)} stitches")
+            return
         text = mn.normalize_text(a.text)
         class F: font = a.font; font_path = None
         font = mn.load_font(F, set(text) | {"ש"}, tmp)
