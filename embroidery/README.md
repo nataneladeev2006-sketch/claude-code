@@ -93,12 +93,24 @@ letter in one file, those random ids could collide and crash the build. Only ids
 already sewn. Each frame matches its standalone build and the same patch in NAMES5A piece for piece, and frame 4
 matches the approved preview `special_preview/SPECIAL_david.JEF`.
 
+## All 9 remaining names in one hooping: `framed/FINAL9A.JEF`
+
+ליאור לוגסי, יסמין קאקזנוב, דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב (Magen David design) stacked, and
+ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני turned sideways. Same layout and size as NAMES9A: 194.6 × 182.4 mm, 20 × 20
+hoop only (JEF hoop code 4), one thread, 1-code cuts, 29,364 needle stitches. It holds exactly the patches of
+`REDO5A.JEF` + `NAMES4A.JEF`, so sew either FINAL9A or those two files, never both.
+
+Checks: `validate_sheet.py`; every patch compared with its standalone build and with the same patch in REDO5A/NAMES4A
+(drawn on exact integer JEF coordinates: 97.8–100% overlap, 0.00 mm edge shift); a rebuild differs only in the header's
+date/time field; rendered and read. The earlier float-based shape check could dip below 90% on the tiny Magen David
+triangles from pixel rounding alone (their stitches were identical), so the comparison now uses integer coordinates.
+
 ## Status
 
 - **Sewn (11):** עמית ממן, עידן רוזנבלום, רועי בלאו, ע.טכנר, טכנר, אחות, הראל כהן, ד״ר יעל עזרא, רופא, ליהי סביליה,
   אביטל ברדה.
-- **Still to sew (9):** `REDO5A.JEF` (ליאור לוגסי, יסמין קאקזנוב, ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני) and
-  `NAMES4A.JEF` (דוד יצקסון, נווה לזניק, שלו מימון, נתנאל אדייב).
+- **Still to sew (9):** ליאור לוגסי, יסמין קאקזנוב, ליאור זוהרה לוגסי, דקל שרוני, הילה חמאני, דוד יצקסון, נווה לזניק,
+  שלו מימון, נתנאל אדייב. Either `FINAL9A.JEF` (one hooping, 20 × 20) or `REDO5A.JEF` + `NAMES4A.JEF` (two hoopings).
 
 ## Redo: `framed/REDO5A.JEF`
 
