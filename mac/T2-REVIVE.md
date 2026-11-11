@@ -13,6 +13,23 @@ learned. Work through it **with the user**, one small step at a time.
   yourself** instead of asking them to type.
 - They are at the Mac for the key presses. Say exactly which keys and port to
   use, and what they should see.
+- If the terminal is a struggle, suggest Remote Control (`/rc`). They can
+  then chat from the Claude phone app, paste normally, and send photos of the
+  Mac's screen.
+
+## If you're running inside WSL Ubuntu (not PowerShell)
+
+- `sudo` asks for a password you can't type. Get root through Windows interop
+  instead, with no password: `wsl.exe -d Ubuntu -u root -- <command>`.
+- Windows commands work from WSL: `powershell.exe -Command "..."` and
+  `cmd.exe /c ...`. A tool installed after WSL started may not be on PATH
+  yet; call it by its full path, for example
+  `"/mnt/c/Program Files/usbipd-win/usbipd.exe"`.
+- Some steps need Windows admin: installing usbipd-win, `usbipd bind` and
+  `usbipd policy`. Run them elevated with
+  `powershell.exe -Command "Start-Process <exe> -ArgumentList '...' -Verb RunAs"`.
+  Windows shows a UAC prompt; tell the user to click **Yes**.
+  `usbipd attach --wsl` doesn't need admin.
 
 ## The problem
 
